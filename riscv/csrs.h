@@ -573,10 +573,10 @@ class dpc_csr_t: public epc_csr_t {
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
-class dcsr_csr_t: public csr_t {
+class dcsr_csr_t: public csr_t { // Debug Control and Status Register (dcsr)
  public:
   dcsr_csr_t(processor_t* const proc, const reg_t addr);
-  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual void verify_permissions(insn_t insn, bool write) const override; // checks if the processor's state is currently in Debug Mode
   virtual reg_t read() const noexcept override;
   void write_cause_and_prv(uint8_t cause, reg_t prv) noexcept;
  protected:

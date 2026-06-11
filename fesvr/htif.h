@@ -12,6 +12,7 @@
 #include <vector>
 #include <assert.h>
 
+// host-target interface (HTIF)
 class htif_t : public chunked_memif_t
 {
  public:

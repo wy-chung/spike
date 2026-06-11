@@ -350,5 +350,5 @@ void processor_t::step(size_t n)
 
     state.minstret->bump(instret);
     n -= instret;
-  }
+  } // while (n > 0)
 }

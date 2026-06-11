@@ -1112,7 +1112,7 @@ dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
   cause(0) {
 }
 
-void dcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
+void dcsr_csr_t::verify_permissions(insn_t insn, bool write) const { // const: calling this function will not modify any of the member variables
   csr_t::verify_permissions(insn, write);
   if (!state->debug_mode)
     throw trap_illegal_instruction(insn.bits());
