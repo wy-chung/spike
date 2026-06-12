@@ -81,7 +81,7 @@ struct state_t
   void reset(processor_t* const proc, reg_t max_isa);
   void add_csr(reg_t addr, const csr_t_p& csr);
 
-  reg_t pc;
+  reg_t pc; //w program counter
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
 
@@ -89,10 +89,10 @@ struct state_t
   std::unordered_map<reg_t, csr_t_p> csrmap;
   reg_t prv;    // TODO: Can this be an enum instead?
   reg_t prev_prv;
-  bool prv_changed;
-  bool v_changed;
-  bool v;
-  bool prev_v;
+  bool prv_changed; //w whether the current instruction changed privilege level (for mstatush and dcsr)
+  bool v_changed; //w whether the current instruction changed v status (for dcsr)
+  bool v; //w whether we're currently in V-extension vector state (for dcsr)
+  bool prev_v;  //w whether we were in V-extension vector state for the previous instruction (for dcsr)
   misa_csr_t_p misa;
   mstatus_csr_t_p mstatus;
   csr_t_p mstatush;
@@ -216,7 +216,7 @@ struct state_t
   int last_inst_xlen;
   int last_inst_flen;
 
-  elp_t elp;
+  elp_t elp;  //w whether the current instruction is a landing pad and thus requires extra checks for well-formedness. See check_if_lpad_required().
 
   bool critical_error;
 

@@ -207,6 +207,13 @@ bool processor_t::slow_path() const
          log_commits_enabled || histogram_enabled || in_wfi || check_triggers_icount;
 }
 
+/*w
+This function runs the processor’s main instruction-execution loop 
+for up to $n$ instructions, switching between a slow path and a fast path 
+while managing PC advancement, debug-mode entry, and pending interrupts. 
+It also handles traps, trigger matches, wait-for-interrupt behavior, and 
+updates the instruction/cycle counters after each chunk of execution.
+*/
 // fetch/decode/execute loop
 void processor_t::step(size_t n)
 {

@@ -570,6 +570,8 @@ const char* processor_t::get_symbol(uint64_t addr)
   return sim->get_symbol(addr);
 }
 
+//w check if the current instruction is a landing pad and if so, verify it is well-formed.
+//w This is called on every instruction, but only does work when state.elp == LP_EXPECTED
 void processor_t::check_if_lpad_required()
 {
   if (unlikely(state.elp == elp_t::LP_EXPECTED)) {

@@ -18,16 +18,16 @@ class trap_t
 {
  public:
   trap_t(reg_t which) : which(which) {}
-  virtual bool has_gva() { return false; }
-  virtual bool has_tval() { return false; }
+  virtual bool has_gva() { return false; }  //w whether this trap has a guest virtual address associated with it
+  virtual bool has_tval() { return false; } //w whether this trap has a tval associated with it
   virtual reg_t get_tval() { return 0; }
   virtual bool has_tval2() { return false; }
   virtual reg_t get_tval2() { return 0; }
-  virtual bool has_tinst() { return false; }
+  virtual bool has_tinst() { return false; }  //w whether this trap has a tinst associated with it (e.g. for some memory traps, tinst holds the instruction that caused the trap)
   virtual reg_t get_tinst() { return 0; }
-  reg_t cause() const { return which; }
+  reg_t cause() const { return which; } //w the trap cause code, which is the value that gets written to the mcause/scause register
 
-  virtual std::string name()
+  virtual std::string name()  //w a human-readable name for this trap, used in logging and debugging output
   {
     const uint8_t code = uint8_t(which);
     const bool is_interrupt = code != which;
@@ -37,7 +37,7 @@ class trap_t
   virtual ~trap_t() = default;
 
  private:
-  reg_t which;
+  reg_t which;  //w the trap cause code, which is the value that gets written to the mcause/scause register
 };
 
 class insn_trap_t : public trap_t
