@@ -222,7 +222,7 @@ private:
   uint64_t imm_sign() { return xs(31, 1); }
 };
 
-template <class T, size_t N, bool zero_reg>
+template <class T, size_t N, bool zero_reg> //w zero_reg is for GPRs, which hardwire x0 to zero. For FPRs and CSRs, zero_reg should be false.
 class regfile_t
 {
 public:

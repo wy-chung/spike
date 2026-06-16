@@ -45,14 +45,14 @@ struct insn_fetch_t
 };
 
 struct icache_entry_t {
-  reg_t tag;
+  reg_t tag;  //w virtual pc address of this entry
   icache_entry_t* next;
   insn_fetch_t data;
 };
 
 struct tlb_entry_t {
-  uintptr_t host_addr;
-  reg_t target_addr;
+  uintptr_t host_addr;  //w address of the start of the page in host memory; 0 for MMIO
+  reg_t target_addr;  //w address of the start of the page in target memory, with low bits masked out
 };
 
 struct dtlb_entry_t {
@@ -66,11 +66,11 @@ struct pte_cache_entry_t {
 };
 
 struct xlate_flags_t {
-  const bool forced_virt : 1 {false};
-  const bool hlvx : 1 {false};
-  const bool lr : 1 {false};
-  const bool ss_access : 1 {false};
-  const bool clean_inval : 1 {false};
+  const bool forced_virt : 1 {false}; //w force to treat a memory access as a virtualized guest access
+  const bool hlvx : 1 {false};  //w Hypervisor Load Word with Execute Intent
+  const bool lr : 1 {false};  //vc load reserved access, which should be treated differently from normal load access for the purpose of trigger matching and TLB permissions check
+  const bool ss_access : 1 {false}; //vc shadow stack access
+  const bool clean_inval : 1 {false}; //vc CBO with xwr=010 causes clean+inval page access, which should be treated differently from normal store access for shadow stack pages
 
   bool is_special_access() const {
     return forced_virt || hlvx || lr || ss_access || clean_inval;
@@ -119,23 +119,23 @@ public:
   }
 
   template<typename T>
-  T load_reserved(reg_t addr) {
+  T load_reserved(reg_t addr) { //w for load reserved
     return load<T>(addr, {.lr = true});
   }
 
   template<typename T>
-  T guest_load(reg_t addr) {
+  T guest_load(reg_t addr) {  //w for Hypervisor
     return load<T>(addr, {.forced_virt = true});
   }
 
   template<typename T>
-  T guest_load_x(reg_t addr) {
+  T guest_load_x(reg_t addr) {  //w guest_load for instruction-fetch
     return load<T>(addr, {.forced_virt=true, .hlvx=true});
   }
 
   // shadow stack load
   template<typename T>
-  T ss_load(reg_t addr) {
+  T ss_load(reg_t addr) { //w for shadow stack load
     if ((addr & (sizeof(T) - 1)) != 0)
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
     return load<T>(addr, {.ss_access=true});
@@ -344,11 +344,12 @@ public:
     return refill_icache(addr, &icache[icache_index(addr)])->data;
   }
 
-  std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb, reg_t vaddr, reg_t allowed_flags = 0, reg_t required_flags = 0)
+  std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb,
+    reg_t vaddr, reg_t allowed_flags = 0, reg_t required_flags = 0)
   {
-    auto vpn = vaddr / PGSIZE, pgoff = vaddr % PGSIZE;
+    reg_t vpn = vaddr / PGSIZE, pgoff = vaddr % PGSIZE;
     auto& entry = tlb[vpn % TLB_ENTRIES];
-    auto hit = likely((entry.tag & (~allowed_flags | required_flags)) == (vpn | required_flags));
+    bool hit = likely((entry.tag & (~allowed_flags | required_flags)) == (vpn | required_flags));
     bool mmio = allowed_flags & TLB_MMIO & entry.tag;
     auto host_addr = mmio ? 0 : entry.data.host_addr + pgoff;
     auto paddr = entry.data.target_addr + pgoff;
@@ -394,8 +395,8 @@ private:
   static const reg_t TLB_ENTRIES = 256;
   // If a TLB tag has TLB_CHECK_TRIGGERS set, then the MMU must check for a
   // trigger match before completing an access.
-  static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63;
-  static const reg_t TLB_CHECK_TRACER = reg_t(1) << 62;
+  static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63; //w Hardware Breakpoints
+  static const reg_t TLB_CHECK_TRACER = reg_t(1) << 62; //w Custom Simulation Tracing
   static const reg_t TLB_MMIO = reg_t(1) << 61;
   static const reg_t TLB_FLAGS = TLB_CHECK_TRIGGERS | TLB_CHECK_TRACER | TLB_MMIO;
   dtlb_entry_t tlb_load[TLB_ENTRIES];

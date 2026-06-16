@@ -90,10 +90,10 @@ struct state_t
   reg_t prv;    // TODO: Can this be an enum instead?
   reg_t prev_prv;
   bool prv_changed; //w whether the current instruction changed privilege level (for mstatush and dcsr)
-  bool v_changed; //w whether the current instruction changed v status (for dcsr)
-  bool v; //w whether we're currently in V-extension vector state (for dcsr)
+  bool v_changed;   //w whether the current instruction changed v status (for dcsr)
+  bool v;           //w whether we're currently in V-extension vector state (for dcsr)
   bool prev_v;  //w whether we were in V-extension vector state for the previous instruction (for dcsr)
-  bool in_wfi;
+  bool in_wfi;  //w True if the processor is currently in WFI (wait for interrupt) state. Cleared when an interrupt is taken.
   misa_csr_t_p misa;
   mstatus_csr_t_p mstatus;
   csr_t_p mstatush;
@@ -381,7 +381,7 @@ private:
   FILE *log_file;
   std::ostream sout_; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
-  bool check_triggers_icount;
+  bool check_triggers_icount; //w True if we need to check trigger icounts on every instruction, which happens when at least one trigger has an icount configured.
   std::vector<bool> impl_table;
 
   // Note: does not include single-letter extensions in misa

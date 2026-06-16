@@ -297,28 +297,29 @@ void processor_t::step(size_t n)
               enter_debug_mode(DCSR_CAUSE_HALT, 0);
             }
           }
-        }
-      }
-      else while (instret < n)
-      {
-        // Main simulation loop, fast path.
-        for (auto ic_entry = _mmu->access_icache(pc); instret < n; instret++) {
-          auto fetch = ic_entry->data;
-          ic_entry = ic_entry->next;
-          auto new_pc = execute_insn_fast(this, pc, fetch);
-          if (unlikely(ic_entry->tag != new_pc)) {
-            ic_entry = &_mmu->icache[_mmu->icache_index(new_pc)];
-            _mmu->icache[_mmu->icache_index(pc)].next = ic_entry;
-            if (ic_entry->tag != new_pc) {
-              pc = new_pc;
-              advance_pc();
-              break;
+        } //w while
+      } //w slow_path
+      else
+        while (instret < n)
+        {
+          // Main simulation loop, fast path.
+          for (icache_entry_t *ic_entry = _mmu->access_icache(pc); instret < n; instret++) {
+            insn_fetch_t fetch = ic_entry->data;
+            ic_entry = ic_entry->next;
+            reg_t new_pc = execute_insn_fast(this, pc, fetch);
+            if (unlikely(ic_entry->tag != new_pc)) {
+              ic_entry = &_mmu->icache[_mmu->icache_index(new_pc)];
+              _mmu->icache[_mmu->icache_index(pc)].next = ic_entry;
+              if (ic_entry->tag != new_pc) {
+                pc = new_pc;
+                advance_pc();
+                break;
+              }
             }
-          }
-          state.pc = pc = ic_entry->tag;
-        }
-      }
-    }
+            state.pc = pc = ic_entry->tag;
+          } //w for
+        } //w while
+    } //w try
     catch(trap_t& t)
     {
       take_trap(t, pc);
