@@ -105,7 +105,7 @@ public:
   T ALWAYS_INLINE load(reg_t addr, xlate_flags_t xlate_flags = {}) {
     target_endian<T> res;
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
-    auto [tlb_hit, host_addr, _] = access_tlb(tlb_load, addr);
+    auto [tlb_hit, host_addr, _/*paddr*/] = access_tlb(tlb_load, addr);
 
     if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
       res = *(target_endian<T>*)host_addr;
@@ -145,7 +145,7 @@ public:
   void ALWAYS_INLINE store(reg_t addr, T val, xlate_flags_t xlate_flags = {}) {
     MMU_OBSERVE_STORE(addr, val, sizeof(T));
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
-    auto [tlb_hit, host_addr, _] = access_tlb(tlb_store, addr);
+    auto [tlb_hit, host_addr, _/*paddr*/] = access_tlb(tlb_store, addr);
 
     if (!xlate_flags.is_special_access() && likely(aligned && tlb_hit)) {
       *(target_endian<T>*)host_addr = to_target(val);
@@ -267,7 +267,7 @@ public:
       store_slow_path(vaddr, size, nullptr, {}, false, true);
     }
 
-    auto [tlb_hit, _, paddr] = access_tlb(tlb_store, vaddr);
+    auto [tlb_hit, _/*host_addr*/, paddr] = access_tlb(tlb_store, vaddr);
     if (!tlb_hit)
       paddr = translate(generate_access_info(vaddr, STORE, {}), 1);
 
@@ -318,7 +318,7 @@ public:
     entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
-    auto [check_tracer, _, paddr] = access_tlb(tlb_insn, addr, TLB_FLAGS, TLB_CHECK_TRACER);
+    auto [check_tracer, _/*host_addr*/, paddr] = access_tlb(tlb_insn, addr, TLB_FLAGS, TLB_CHECK_TRACER);
     if (unlikely(check_tracer)) {
       if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
         entry->tag = -1;
@@ -344,6 +344,9 @@ public:
     return refill_icache(addr, &icache[icache_index(addr)])->data;
   }
 
+  //w allowed_flags:
+  //w required_flags:
+  //w   see TLB_FLAGS (TLB_CHECK_TRIGGERS, TLB_CHECK_TRACER, TLB_MMIO)
   std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb,
     reg_t vaddr, reg_t allowed_flags = 0, reg_t required_flags = 0)
   {

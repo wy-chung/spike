@@ -203,7 +203,7 @@ bool processor_t::slow_path() const
 }
 
 /*w
-This function runs the processor’s main instruction-execution loop 
+This function runs the processor's main instruction-execution loop
 for up to $n$ instructions, switching between a slow path and a fast path 
 while managing PC advancement, debug-mode entry, and pending interrupts. 
 It also handles traps, trigger matches, wait-for-interrupt behavior, and 
