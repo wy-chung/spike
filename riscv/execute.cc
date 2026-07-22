@@ -161,6 +161,7 @@ inline void processor_t::update_histogram(reg_t pc)
 static inline reg_t execute_insn_fast(processor_t* p, reg_t pc, insn_fetch_t fetch) {
   return fetch.func(p, fetch.insn, pc);
 }
+
 static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
   if (p->get_log_commits_enabled()) {
@@ -313,7 +314,7 @@ void processor_t::step(size_t n)
               if (ic_entry->tag != new_pc) {
                 pc = new_pc;
                 advance_pc();
-                break;
+                break; //w break for loop
               }
             }
             state.pc = pc = ic_entry->tag;

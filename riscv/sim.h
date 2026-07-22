@@ -77,7 +77,7 @@ private:
   const cfg_t * const cfg;
   std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
   std::vector<processor_t*> procs;
-  std::map<size_t, processor_t*> harts;
+  std::map<size_t, processor_t*> harts;	//w stores key-value pairs and keeping the keys in sorted order
   std::unordered_map<reg_t, char*> addr_to_mem_cache;
   std::pair<reg_t, reg_t> initrd_range;
   std::string dts;

@@ -154,6 +154,7 @@ static inline int popcount(uint64_t val)
   return val;
 }
 
+//w Count Trailing Zeros
 static inline int ctz(uint64_t val)
 {
   if (!val)

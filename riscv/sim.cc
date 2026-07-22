@@ -318,7 +318,7 @@ int sim_t::run()
 
 void sim_t::step(size_t n)
 {
-  for (size_t i = 0, steps = 0; i < n; i += steps)
+  for (size_t i = 0, steps/* = 0*/; i < n; i += steps)
   {
     steps = std::min(n - i, INTERLEAVE - current_step);
     procs[current_proc]->step(steps);
@@ -336,10 +336,12 @@ void sim_t::step(size_t n)
     }
   }
 }
+
 const char* sim_t::get_dts() {
   dts = dtb_to_dts(dtb);
   return dts.c_str(); 
 }
+
 void sim_t::add_device(reg_t addr, std::shared_ptr<abstract_device_t> dev) {
   bus.add_device(addr, dev.get());
   devices.push_back(dev);

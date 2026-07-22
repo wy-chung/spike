@@ -40,7 +40,7 @@ const reg_t PGSIZE = 1 << PGSHIFT;
 
 struct insn_fetch_t
 {
-  insn_func_t func;
+  insn_func_t func;	//w init by processor_t::decode_insn()
   insn_t insn;
 };
 

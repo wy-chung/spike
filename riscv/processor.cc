@@ -30,6 +30,7 @@
 #undef STATE
 #define STATE state
 
+//w %priv_str: Privileged Architecture Specification Version
 processor_t::processor_t(const char* isa_str, const char* priv_str,
                          const cfg_t *cfg,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
@@ -42,8 +43,8 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   impl_table(256, false), extension_enable_table(isa.get_extension_table()),
   last_pc(1), executions(1), TM(cfg->trigger_count)
 {
-  VU.p = this;
-  TM.proc = this;
+  VU.p = this;  //w vector_unit_t
+  TM.proc = this; //w triggers::module_t
 
 #ifndef HAVE_INT128
   if (isa.has_any_vector()) {
@@ -675,6 +676,7 @@ insn_func_t processor_t::decode_insn(insn_t insn)
 {
   const auto& pool = opcode_map[insn.bits() % std::size(opcode_map)];
 
+  //w no termination condition because every bucket ends with a sentinel entry
   for (auto p = pool.begin(); ; ++p) {
     if ((insn.bits() & p->mask) == p->match) {
       return p->func;
@@ -689,10 +691,11 @@ void processor_t::register_insn(insn_desc_t desc, std::vector<insn_desc_t>& pool
   pool.push_back(desc);
 }
 
+//w processor_t::decode_insn will use the opcode_map built by this function
 void processor_t::build_opcode_map()
 {
-  bool rve = extension_enabled('E');
-  bool zca = extension_enabled(EXT_ZCA);
+  bool rve = extension_enabled('E');  //w Embedded, with only 16 GPRs
+  bool zca = extension_enabled(EXT_ZCA); //w Base integer compressed instructions
   const size_t N = std::size(opcode_map);
 
   auto build_one = [&](const insn_desc_t& desc) {

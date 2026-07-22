@@ -141,7 +141,7 @@ typedef enum {
 } isa_extension_t;
 
 typedef enum {
-  IMPL_MMU_VMID,
+  IMPL_MMU_VMID,  //w Virtual Machine Identifiers
   IMPL_MMU_ASID,
 } impl_extension_t;
 
