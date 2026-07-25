@@ -676,7 +676,8 @@ insn_func_t processor_t::decode_insn(insn_t insn)
 {
   const auto& pool = opcode_map[insn.bits() % std::size(opcode_map)];
 
-  //w no termination condition because every bucket ends with a sentinel entry
+  //w no termination condition because every bucket ends with
+  //w {mask = 0, match = 0 and func = ::illegal_instruction()}
   for (auto p = pool.begin(); ; ++p) {
     if ((insn.bits() & p->mask) == p->match) {
       return p->func;
@@ -691,7 +692,7 @@ void processor_t::register_insn(insn_desc_t desc, std::vector<insn_desc_t>& pool
   pool.push_back(desc);
 }
 
-//w processor_t::decode_insn will use the opcode_map built by this function
+//w processor_t::decode_insn (#673) will use the opcode_map built by this function
 void processor_t::build_opcode_map()
 {
   bool rve = extension_enabled('E');  //w Embedded, with only 16 GPRs
@@ -701,7 +702,7 @@ void processor_t::build_opcode_map()
   auto build_one = [&](const insn_desc_t& desc) {
     auto func = desc.func(xlen, rve, log_commits_enabled);
     if (!zca && insn_length(desc.match) % 4)
-      func = &::illegal_instruction;
+      func = &::illegal_instruction;  //w prefer always using & because pointer-to-member functions (non-static) strictly require the & operator
 
     auto stride = std::min(N, size_t(1) << ctz(~desc.mask));
     for (size_t i = desc.match & (stride - 1); i < N; i += stride) {
@@ -795,7 +796,7 @@ void processor_t::register_base_instructions()
   #undef DEFINE_INSN
   #undef DEFINE_INSN_UNCOND
 
-  // terminate instruction list with a catch-all
+  // terminate instruction list with a catch-all illegal_instruction
   register_base_insn(insn_desc_t::illegal_instruction);
 
   build_opcode_map();

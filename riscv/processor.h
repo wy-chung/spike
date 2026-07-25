@@ -59,7 +59,7 @@ struct insn_desc_t
   }
 
   static const insn_desc_t illegal_instruction;
-};
+}; //w struct insn_desc_t
 
 struct opcode_map_entry_t
 {
