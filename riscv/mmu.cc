@@ -105,18 +105,19 @@ inline mmu_t::insn_parcel_t mmu_t::perform_intrapage_fetch(reg_t vaddr, uintptr_
 mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
   if (matched_trigger) {
-    auto trig = matched_trigger.value();
+    /*auto*/triggers::matched_t& trig = matched_trigger.value();
     matched_trigger.reset();
     throw trig;
   }
 
-  if  (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS); tlb_hit) {
+  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
+  if  (tlb_hit) {
     // Fast path for simple cases
     return perform_intrapage_fetch(vaddr, host_addr, paddr);
   }
 
-  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS);
-  auto access_info = generate_access_info(vaddr, FETCH, {});
+  std::tie(tlb_hit, host_addr, paddr) = access_tlb(tlb_insn, vaddr, TLB_FLAGS);
+  /*auto*/mem_access_info_t access_info = generate_access_info(vaddr, FETCH, {});
 
   if (check_triggers_fetch)
     check_triggers(triggers::OPERATION_EXECUTE, vaddr,
@@ -199,34 +200,37 @@ void mmu_t::check_triggers(triggers::operation_t operation,
   check_triggers(operation, addr, virt, access_len, std::nullopt);
 }
 
-void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool virt, std::size_t size, std::optional<reg_t> data)
+void mmu_t::check_triggers(triggers::operation_t operation,
+  reg_t addr, bool virt, std::size_t size, std::optional<reg_t> data)
 {
   if (matched_trigger || !proc)
     return;
 
-  auto match = proc->TM.detect_memory_access_match(operation, address, size, data);
+  auto match = proc->TM.detect_memory_access_match(operation, addr, size, data);
   if (!match.has_value())
     return;
 
   switch (match->timing) {
     case triggers::TIMING_BEFORE:
-      throw triggers::matched_t(operation, address, match->action, virt);
+      throw triggers::matched_t(operation, addr, match->action, virt);
 
     case triggers::TIMING_AFTER:
       // We want to take this exception on the next instruction.  We check
       // whether to do so in the I$ refill slow path, which we can force by
       // flushing the TLB.
       flush_tlb();
-      matched_trigger = triggers::matched_t(operation, address, match->action, virt);
+      matched_trigger = triggers::matched_t(operation, addr, match->action, virt);
   }
 }
 
-inline void mmu_t::perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
+inline void mmu_t::perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr,
+  reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
 {
   if (host_addr) {
     memcpy(bytes, (char*)host_addr, len);
   } else if (!mmio_load(paddr, len, bytes)) {
-    auto access_info = generate_access_info(vaddr, LOAD, xlate_flags);
+    //w mmio rejected, a trap is raised
+    /*auto*/mem_access_info_t access_info = generate_access_info(vaddr, LOAD, xlate_flags);
     if (access_info.flags.ss_access)
       throw trap_store_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
     else
@@ -277,7 +281,7 @@ void mmu_t::load_slow_path(reg_t original_addr, std::size_t len,
     }
   }
 
-  auto access_info = generate_access_info(original_addr, LOAD, xlate_flags);
+  /*auto*/mem_access_info_t access_info = generate_access_info(original_addr, LOAD, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
 
   if (check_triggers_load)
@@ -318,6 +322,7 @@ inline void mmu_t::perform_intrapage_store(reg_t vaddr, uintptr_t host_addr, reg
   if (host_addr) {
      memcpy((char*)host_addr, bytes, len);
   } else if (!mmio_store(paddr, len, bytes)) {
+    //w mmio rejected, a trap is raised
     auto access_info = generate_access_info(vaddr, STORE, xlate_flags);
     throw trap_store_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
   }

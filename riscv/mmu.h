@@ -309,7 +309,7 @@ public:
     return target_big_endian ? to_be(res) : res;
   }
 
-  inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
+  inline /*icache_entry_t**/void refill_icache(reg_t addr, icache_entry_t* entry)
   {
     auto [insn, length] = fetch_insn(addr);
 
@@ -326,7 +326,7 @@ public:
       }
     }
     MMU_OBSERVE_FETCH(addr, insn, length);
-    return entry;
+    //ori return entry;
   }
 
   inline icache_entry_t* access_icache(reg_t addr)
@@ -336,12 +336,15 @@ public:
       MMU_OBSERVE_FETCH(addr, entry->data.insn, insn_length(entry->data.insn.bits()));
       return entry;
     }
-    return refill_icache(addr, entry);
+    /*return */refill_icache(addr, entry);
+    return entry;
   }
 
   inline insn_fetch_t load_insn(reg_t addr)
   {
-    return refill_icache(addr, &icache[icache_index(addr)])->data;
+    icache_entry_t* entry = &icache[icache_index(addr)];
+    refill_icache(addr, entry);//ori &icache[icache_index(addr)])->data;*/
+    return entry->data;
   }
 
   //w allowed_flags:
@@ -350,7 +353,8 @@ public:
   std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb,
     reg_t vaddr, reg_t allowed_flags = 0, reg_t required_flags = 0)
   {
-    reg_t vpn = vaddr / PGSIZE, pgoff = vaddr % PGSIZE;
+    reg_t vpn = vaddr / PGSIZE;
+    reg_t pgoff = vaddr % PGSIZE;
     auto& entry = tlb[vpn % TLB_ENTRIES];
     bool hit = likely((entry.tag & (~allowed_flags | required_flags)) == (vpn | required_flags));
     bool mmio = allowed_flags & TLB_MMIO & entry.tag;

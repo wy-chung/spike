@@ -15,7 +15,7 @@ class simif_t
 {
 public:
   // should return NULL for MMIO addresses
-  virtual char* addr_to_mem(reg_t paddr) = 0;
+  virtual char* addr_to_mem(reg_t paddr) = 0;  //w pure virtual
   virtual bool reservable(reg_t paddr) { return addr_to_mem(paddr); }
   // used for MMIO addresses
   virtual bool mmio_fetch(reg_t paddr, size_t len, uint8_t* bytes) { return mmio_load(paddr, len, bytes); }
@@ -23,9 +23,9 @@ public:
   virtual bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) = 0;
   virtual bool is_debug_module_access(reg_t, size_t) { return false; }
   // Callback for processors to let the simulation know they were reset.
-  virtual void proc_reset(unsigned id) = 0;
+  virtual void proc_reset(unsigned id) = 0; //w the function has no implementation
 
-  virtual const cfg_t &get_cfg() const = 0;
+  virtual const cfg_t &get_cfg() const = 0; //w any derived class must override it
   virtual const std::map<size_t, processor_t*>& get_harts() const = 0;
 
   virtual const char* get_symbol(uint64_t paddr) = 0;

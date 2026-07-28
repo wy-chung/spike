@@ -233,6 +233,10 @@ void processor_t::step(size_t n)
     state.v_changed = false;
     reg_t mcountinhibit = state.mcountinhibit->read();
 
+#ifdef WYC
+    auto advance_pc = [&]() {
+    };
+#else
     #define advance_pc() { \
       if (unlikely(invalid_pc(pc))) { \
         switch (pc) { \
@@ -246,6 +250,7 @@ void processor_t::step(size_t n)
         state.pc = pc; \
         instret++; \
       }}
+#endif
 
     try
     {
@@ -317,7 +322,7 @@ void processor_t::step(size_t n)
                 break; //w break for loop
               }
             }
-            state.pc = pc = ic_entry->tag;
+            state.pc = pc = new_pc; //ori ic_entry->tag;
           } //w for
         } //w while
     } //w try
@@ -365,5 +370,5 @@ serialize:
     state.mcycle->bump((mcountinhibit & MCOUNTINHIBIT_CY) ? 0 : instret);
 
     n -= instret;
-  }
-}
+  } //w while (n > 0)
+} //w processor_t::step
