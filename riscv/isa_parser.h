@@ -43,7 +43,7 @@ typedef enum {
   EXT_SMPMPMT,
   EXT_SMRNMI,
   EXT_SMSTATEEN,
-  EXT_SSPMP,
+  EXT_SSPMP,		//w Supervisor-mode Physical Memory Protection
   EXT_SMPMPDELEG,
   EXT_SSPMPEN,
   EXT_SSCOFPMF,

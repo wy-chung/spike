@@ -51,8 +51,8 @@ struct icache_entry_t {
 };
 
 struct tlb_entry_t {
-  uintptr_t host_addr;  //w address of the start of the page in host memory; 0 for MMIO
-  reg_t target_addr;  //w address of the start of the page in target memory, with low bits masked out
+  uintptr_t host_addr;  //w start of the page address in host memory; 0 for MMIO
+  reg_t target_addr;  //w physical page base for mmio, initialized in mmu_t::refill_tlb()
 };
 
 struct dtlb_entry_t {
@@ -66,11 +66,11 @@ struct pte_cache_entry_t {
 };
 
 struct xlate_flags_t {
-  const bool forced_virt : 1 {false}; //w force to treat a memory access as a virtualized guest access
-  const bool hlvx : 1 {false};  //w Hypervisor Load Word with Execute Intent
+  const bool forced_virt : 1 {false}; //w force virtualization (e.g. HLV/HSV)
+  const bool hlvx : 1 {false};  //w hypervisor load-execute (instruction fetch as load)
   const bool lr : 1 {false};  //vc load reserved access, which should be treated differently from normal load access for the purpose of trigger matching and TLB permissions check
-  const bool ss_access : 1 {false}; //vc shadow stack access
-  const bool clean_inval : 1 {false}; //vc CBO with xwr=010 causes clean+inval page access, which should be treated differently from normal store access for shadow stack pages
+  const bool ss_access : 1 {false}; //w shadow stack access
+  const bool clean_inval : 1 {false}; //w Cache-block management (Zicbom) clean/invalidate; special permission handling
 
   bool is_special_access() const {
     return forced_virt || hlvx || lr || ss_access || clean_inval;
@@ -78,12 +78,12 @@ struct xlate_flags_t {
 };
 
 struct mem_access_info_t {
-  const reg_t vaddr;
-  const reg_t transformed_vaddr;
-  const reg_t effective_priv;
-  const bool effective_virt;
-  const xlate_flags_t flags;
-  const access_type type;
+  const reg_t vaddr;		//w original virtual address
+  const reg_t transformed_vaddr;//w VA after transforms (e.g. pointer masking)
+  const reg_t effective_priv;	//w privilege used for the walk / checks
+  const bool effective_virt;	//w whether two-stage (guest) translation is active
+  const xlate_flags_t flags;	//w special-access modifiers
+  const access_type type;	//w FETCH / LOAD / STORE
 };
 
 [[noreturn]] void throw_access_exception(bool virt, reg_t addr, access_type type);
@@ -589,11 +589,11 @@ private:
 };
 
 struct vm_info {
-  int levels;
-  int idxbits;
-  int widenbits;
-  int ptesize;
-  reg_t ptbase;
+  int levels;		//w number of page-table levels
+  int idxbits;		//w VPN index bits per level (except possibly the top)
+  int widenbits;	//w extra index bits at the top level (G-stage "x4")
+  int ptesize;		//w size of one PTE in bytes
+  reg_t ptbase;		//w physical base address of the root page table
 };
 
 inline vm_info decode_vm_info(int xlen, bool stage2, reg_t prv, reg_t satp)

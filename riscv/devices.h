@@ -36,7 +36,7 @@ class bus_t : public abstract_device_t {
 
 class rom_device_t : public abstract_device_t {
  public:
-  rom_device_t(std::vector<char> data);
+  rom_device_t(std::vector<char> data) : data(data) {} //w
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   reg_t size() override { return data.size(); }

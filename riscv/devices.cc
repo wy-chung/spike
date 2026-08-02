@@ -8,7 +8,9 @@ mmio_device_map_t& mmio_device_map()
   return device_map;
 }
 
-static auto empty_device = rom_device_t(std::vector<char>());
+//ori static auto empty_device = rom_device_t(std::vector<char>());
+static auto empty_device = rom_device_t(std::vector<char>{});
+//w static rom_device_t empty_device{ std::vector<char>{} };
 
 bus_t::bus_t()
   : bus_t(&empty_device)

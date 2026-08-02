@@ -385,14 +385,14 @@ bool sim_t::is_debug_module_access(reg_t paddr, size_t len)
 
 bool sim_t::mmio_load(reg_t paddr, size_t len, uint8_t* bytes)
 {
-  if (paddr + len < paddr)
+  if (paddr + len < paddr) // overflow check
     return false;
   return bus.load(paddr, len, bytes);
 }
 
 bool sim_t::mmio_store(reg_t paddr, size_t len, const uint8_t* bytes)
 {
-  if (paddr + len < paddr)
+  if (paddr + len < paddr) // overflow check
     return false;
   return bus.store(paddr, len, bytes);
 }

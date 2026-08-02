@@ -71,17 +71,16 @@ void mmu_t::flush_tlb()
 reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
 {
   reg_t addr = access_info.transformed_vaddr;
-  access_type type = access_info.type;
   if (!proc)
     return addr;
 
+  access_type type = access_info.type;
   bool virt = access_info.effective_virt;
   reg_t mode = (reg_t) access_info.effective_priv;
 
   reg_t paddr = walk(access_info) | (addr & (PGSIZE-1));
-
-  reg_t satp = proc->get_state()->satp->readvirt(virt);
   if (proc->extension_enabled_const(EXT_SSPMP)) {
+    reg_t satp = proc->get_state()->satp->readvirt(virt); //wyc moved. ori out of if
     if ((satp == SATP_MODE_OFF) && (mode < PRV_M) && !spmp_ok(paddr, len, type, mode))
       throw_page_fault_exception(virt, addr, type);
   }
@@ -110,7 +109,8 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
     throw trig;
   }
 
-  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
+  bool tlb_hit; uintptr_t host_addr; reg_t paddr;
+  std::tie(tlb_hit, host_addr, paddr) = access_tlb(tlb_insn, vaddr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
   if  (tlb_hit) {
     // Fast path for simple cases
     return perform_intrapage_fetch(vaddr, host_addr, paddr);
@@ -560,7 +560,10 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   return true;
 }
 
-reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx, bool is_for_vs_pt_addr)
+//w performs the second-stage (G-stage) address translation:
+//w   guest physical address (GPA) -> host physical address (HPA)
+reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type,
+  access_type trap_type, bool virt, bool hlvx, bool is_for_vs_pt_addr)
 {
   if (!virt)
     return gpa;
@@ -686,14 +689,14 @@ bool mmu_t::svukte_fault(reg_t addr, mem_access_info_t access_info)
 
 reg_t mmu_t::walk(mem_access_info_t access_info)
 {
+  const reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
   access_type type = access_info.type;
   reg_t addr = access_info.transformed_vaddr;
   bool virt = access_info.effective_virt;
   bool hlvx = access_info.flags.hlvx;
   reg_t mode = access_info.effective_priv;
-  reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
   reg_t satp = proc->get_state()->satp->readvirt(virt);
-  vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
+  vm_info vm = decode_vm_info(proc->get_const_xlen(), /*stage2*/false, mode, satp);
 
   bool ss_access = access_info.flags.ss_access;
 
@@ -703,8 +706,11 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     type = STORE;
   }
 
-  if (vm.levels == 0)
-    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx, false) & ~page_mask; // zero-extend from xlen
+  if (vm.levels == 0) {
+    reg_t gpa = addr & ((reg_t(2) << (proc->xlen-1))-1);
+    reg_t hpa = s2xlate(addr, gpa, type, type, virt, hlvx, /*is_for_vs_pt_addr*/false);
+    return hpa & ~page_mask; // zero-extend from xlen
+  }
 
   if (svukte_fault(addr, access_info)) {
     throw_page_fault_exception(virt, addr, type);
@@ -811,7 +817,9 @@ void mmu_t::register_memtracer(memtracer_t* t)
   tracer.hook(t);
 }
 
-reg_t mmu_t::get_pmlen(bool effective_virt, reg_t effective_priv, xlate_flags_t flags) const {
+reg_t mmu_t::get_pmlen(bool effective_virt, reg_t effective_priv,
+  xlate_flags_t flags) const
+{
   if (!proc || proc->get_xlen() != 64 || flags.hlvx)
     return 0;
 
@@ -838,7 +846,9 @@ reg_t mmu_t::get_pmlen(bool effective_virt, reg_t effective_priv, xlate_flags_t 
   return 0;
 }
 
-mem_access_info_t mmu_t::generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags) {
+mem_access_info_t mmu_t::generate_access_info(reg_t addr, access_type type,
+  xlate_flags_t xlate_flags)
+{
   if (!proc)
     return {addr, addr, 0, false, {}, type};
   bool virt = proc->state.v;
@@ -858,7 +868,8 @@ mem_access_info_t mmu_t::generate_access_info(reg_t addr, access_type type, xlat
     reg_t pmlen = get_pmlen(virt, mode, xlate_flags);
     reg_t satp = proc->state.satp->readvirt(virt);
     bool is_physical_addr = mode == PRV_M || get_field(satp, SATP64_MODE) == SATP_MODE_OFF;
-    transformed_addr = is_physical_addr ? zext(addr, xlen - pmlen) : sext(addr, xlen - pmlen);
+    transformed_addr = is_physical_addr ? zext(addr, xlen - pmlen)
+                                        : sext(addr, xlen - pmlen);
   }
   return {addr, transformed_addr, mode, virt, xlate_flags, type};
 }

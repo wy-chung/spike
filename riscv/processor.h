@@ -87,8 +87,8 @@ struct state_t
 
   // control and status registers
   std::unordered_map<reg_t, csr_t_p> csrmap;
-  reg_t prv;    // TODO: Can this be an enum instead?
-  reg_t prev_prv;
+  reg_t prv;    // TODO: Can this be an enum instead?, w: current Privilege Level
+  reg_t prev_prv; //w Privilege level at the start of the current instruction execution
   bool prv_changed; //w whether the current instruction changed privilege level (for mstatush and dcsr)
   bool v_changed;   //w whether the current instruction changed v status (for dcsr)
   bool v;           //w whether we're currently in V-extension vector state (for dcsr)
