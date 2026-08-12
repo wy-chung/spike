@@ -570,7 +570,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type,
   if (!virt)
     return gpa;
 
-  vm_info vm = decode_vm_info(proc, true, PRV_U/*0*/);
+  vm_info vm = decode_vm_info(proc, /*stage2*/true, PRV_U/*0*/);
   if (vm.levels == 0) //w MODE is Bare
     return gpa;
 
