@@ -120,7 +120,7 @@ struct state_t
   csr_t_p sepc;
   csr_t_p stval;
   csr_t_p stvec;
-  virtualized_csr_t_p satp;
+  virtualized_csr_t_p satp;	//w Supervisor Address Translation and Protection
   csr_t_p scause;
   csr_t_p scountinhibit;
 
@@ -139,7 +139,7 @@ struct state_t
   csr_t_p hcounteren;
   csr_t_p htval;
   csr_t_p htinst;
-  csr_t_p hgatp;
+  csr_t_p hgatp;	//w Hypervisor Guest Address Translation and Protection
   hvip_csr_t_p hvip;
   sstatus_csr_t_p sstatus;
   vsstatus_csr_t_p vsstatus;

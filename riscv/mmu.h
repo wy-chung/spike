@@ -596,42 +596,47 @@ struct vm_info {
   reg_t ptbase;		//w physical base address of the root page table
 };
 
-inline vm_info decode_vm_info(int xlen, bool stage2, reg_t prv, reg_t satp)
+inline vm_info decode_vm_info(processor_t *proc, bool stage2, reg_t prv)
 {
-  if (prv == PRV_M) {
+  if (prv == PRV_M)
     return {0, 0, 0, 0, 0};
-  } else if (!stage2 && prv <= PRV_S && xlen == 32) {
-    switch (get_field(satp, SATP32_MODE)) {
-      case SATP_MODE_OFF: return {0, 0, 0, 0, 0};
-      case SATP_MODE_SV32: return {2, 10, 0, 4, (satp & SATP32_PPN) << PGSHIFT};
-      default: abort();
-    }
-  } else if (!stage2 && prv <= PRV_S && xlen == 64) {
-    switch (get_field(satp, SATP64_MODE)) {
-      case SATP_MODE_OFF: return {0, 0, 0, 0, 0};
-      case SATP_MODE_SV39: return {3, 9, 0, 8, (satp & SATP64_PPN) << PGSHIFT};
-      case SATP_MODE_SV48: return {4, 9, 0, 8, (satp & SATP64_PPN) << PGSHIFT};
-      case SATP_MODE_SV57: return {5, 9, 0, 8, (satp & SATP64_PPN) << PGSHIFT};
-      case SATP_MODE_SV64: return {6, 9, 0, 8, (satp & SATP64_PPN) << PGSHIFT};
-      default: abort();
-    }
-  } else if (stage2 && xlen == 32) {
-    switch (get_field(satp, HGATP32_MODE)) {
-      case HGATP_MODE_OFF: return {0, 0, 0, 0, 0};
-      case HGATP_MODE_SV32X4: return {2, 10, 2, 4, (satp & HGATP32_PPN) << PGSHIFT};
-      default: abort();
-    }
-  } else if (stage2 && xlen == 64) {
-    switch (get_field(satp, HGATP64_MODE)) {
-      case HGATP_MODE_OFF: return {0, 0, 0, 0, 0};
-      case HGATP_MODE_SV39X4: return {3, 9, 2, 8, (satp & HGATP64_PPN) << PGSHIFT};
-      case HGATP_MODE_SV48X4: return {4, 9, 2, 8, (satp & HGATP64_PPN) << PGSHIFT};
-      case HGATP_MODE_SV57X4: return {5, 9, 2, 8, (satp & HGATP64_PPN) << PGSHIFT};
-      default: abort();
-    }
-  } else {
-    abort();
+
+  int xlen = proc->get_const_xlen();
+  if (!stage2) {
+    reg_t satp = proc->get_state()->satp->read();
+    if (prv <= PRV_S && xlen == 32)
+      switch (get_field(satp, SATP32_MODE)) {
+        case SATP_MODE_OFF: return {0, 0, 0, 0, 0};
+        case SATP_MODE_SV32: return {2, 10, 0, 4, (satp & SATP32_PPN) << PGSHIFT};
+        //w default: abort();
+      }
+    else if (prv <= PRV_S && xlen == 64)
+      switch (get_field(satp, SATP64_MODE)) {
+        case SATP_MODE_OFF: return {0, 0, 0, 0, 0};
+        case SATP_MODE_SV39: return {3, 9, 0, 8, (satp & SATP64_PPN) << PGSHIFT};
+        case SATP_MODE_SV48: return {4, 9, 0, 8, (satp & SATP64_PPN) << PGSHIFT};
+        case SATP_MODE_SV57: return {5, 9, 0, 8, (satp & SATP64_PPN) << PGSHIFT};
+        case SATP_MODE_SV64: return {6, 9, 0, 8, (satp & SATP64_PPN) << PGSHIFT};
+        //w default: abort();
+      }
+  } else { //w stage2
+    reg_t hgatp = proc->get_state()->hgatp->read();
+    if (xlen == 32)
+      switch (get_field(hgatp, HGATP32_MODE)) {
+        case HGATP_MODE_OFF: return {0, 0, 0, 0, 0};
+        case HGATP_MODE_SV32X4: return {2, 10, 2, 4, (hgatp & HGATP32_PPN) << PGSHIFT};
+        //w default: abort();
+      }
+    else if (xlen == 64)
+      switch (get_field(hgatp, HGATP64_MODE)) {
+        case HGATP_MODE_OFF: return {0, 0, 0, 0, 0};
+        case HGATP_MODE_SV39X4: return {3, 9, 2, 8, (hgatp & HGATP64_PPN) << PGSHIFT};
+        case HGATP_MODE_SV48X4: return {4, 9, 2, 8, (hgatp & HGATP64_PPN) << PGSHIFT};
+        case HGATP_MODE_SV57X4: return {5, 9, 2, 8, (hgatp & HGATP64_PPN) << PGSHIFT};
+        //w default: abort();
+      }
   }
+  abort();
 }
 
 #endif

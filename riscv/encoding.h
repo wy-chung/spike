@@ -33,7 +33,7 @@
 #define MSTATUS_XS          _RISCV_UL(0x00018000)
 #define MSTATUS_MPRV        _RISCV_UL(0x00020000)
 #define MSTATUS_SUM         _RISCV_UL(0x00040000)
-#define MSTATUS_MXR         _RISCV_UL(0x00080000)
+#define MSTATUS_MXR         _RISCV_UL(0x00080000)	//w Make eXecutable Readable
 #define MSTATUS_TVM         _RISCV_UL(0x00100000)
 #define MSTATUS_TW          _RISCV_UL(0x00200000)
 #define MSTATUS_TSR         _RISCV_UL(0x00400000)

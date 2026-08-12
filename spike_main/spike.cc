@@ -320,6 +320,7 @@ static std::vector<size_t> parse_hartids(const char *s)
 
 int main(int argc, char** argv)
 {
+printf("wyc's test version\n");
   bool debug = false;
   bool halted = false;
   bool histogram = false;
