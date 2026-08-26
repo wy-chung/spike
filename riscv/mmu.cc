@@ -571,7 +571,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type,
     return gpa;
 
   vm_info vm = decode_vm_info(proc, /*stage2*/true, PRV_U/*0*/);
-  if (vm.levels == 0) //w MODE is Bare
+  if (vm.levels == 0) //w G-stage bare
     return gpa;
 
   int maxgpabits = vm.levels * vm.idxbits + vm.widenbits + PGSHIFT;
@@ -681,6 +681,11 @@ bool mmu_t::svukte_qualified(mem_access_info_t access_info)
   return true;
 }
 
+//w Svukte extension
+//w sv -> supervisor virtual memory
+//w u -> user-mode, k -> kernel-mode
+//w te -> translation entries
+//w immediately fault on accesses to kernel-space PTEs when executing in User mode
 bool mmu_t::svukte_fault(reg_t addr, mem_access_info_t access_info)
 {
   if (!svukte_qualified(access_info))
@@ -701,7 +706,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
 
   bool ss_access = access_info.flags.ss_access;
 
-  if (ss_access) {
+  if (ss_access) { //w shadow stack access
     if (vm.levels == 0)
       throw trap_store_access_fault(virt, addr, 0, 0);
     type = STORE;
@@ -808,7 +813,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
       reg_t phys = page_base | (addr & page_mask);
       return s2xlate(addr, phys, type, type, virt, hlvx, /*is_for_vs_pt_addr*/false) & ~page_mask;
     }
-  }
+  } //w for
 
   throw_page_fault_exception(virt, addr, type);
 }

@@ -47,13 +47,13 @@ typedef enum {
   EXT_SMPMPDELEG,
   EXT_SSPMPEN,
   EXT_SSCOFPMF,
-  EXT_SVADU,
-  EXT_SVADE,
-  EXT_SVNAPOT,
-  EXT_SVPBMT,
-  EXT_SVINVAL,
+  EXT_SVADU,	//w Hardware updates A/D bits automatically
+  EXT_SVADE,	//w Hardware raises exception when A/D needs updating
+  EXT_SVNAPOT,	//w 64 KiB NAPOT leaves
+  EXT_SVPBMT,	//w Sv Page-Based Memory Types
+  EXT_SVINVAL,	//w Supervisor Fine-Grained Address-Translation Cache Invalidation
   EXT_SVUKTE,
-  EXT_SVRSW60T59B,
+  EXT_SVRSW60T59B,	//w PTE bits 60:59 become reserved for software
   EXT_ZDINX,
   EXT_ZFA,
   EXT_ZFBFMIN,

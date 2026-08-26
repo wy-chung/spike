@@ -711,7 +711,7 @@ void processor_t::build_opcode_map()
     }
   };
 
-  for (auto& p : opcode_map)
+  for (auto& p : opcode_map) // std::vector<opcode_map_entry_t>
     p.clear();
 
   for (auto& d : custom_instructions)

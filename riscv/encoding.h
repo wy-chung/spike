@@ -32,7 +32,7 @@
 #define MSTATUS_FS          _RISCV_UL(0x00006000)
 #define MSTATUS_XS          _RISCV_UL(0x00018000)
 #define MSTATUS_MPRV        _RISCV_UL(0x00020000)
-#define MSTATUS_SUM         _RISCV_UL(0x00040000)
+#define MSTATUS_SUM         _RISCV_UL(0x00040000)	//w Permit Supervisor User Memory Access
 #define MSTATUS_MXR         _RISCV_UL(0x00080000)	//w Make eXecutable Readable
 #define MSTATUS_TVM         _RISCV_UL(0x00100000)
 #define MSTATUS_TW          _RISCV_UL(0x00200000)
@@ -520,6 +520,9 @@
 #define PTE_SVRSW60T59B  _RISCV_ULL(0x1800000000000000) /* Svrsw60t59b: Reserved for software use */
 #define PTE_RSVD         _RISCV_ULL(0x07C0000000000000) /* Reserved for future standard use */
 #define PTE_PBMT  _RISCV_ULL(0x6000000000000000) /* Svpbmt: Page-based memory types */
+//w#define PTE_PBMT_PMA      0x0000000000000000ULL  /* 00b: PMA Default */
+//w#define PTE_PBMT_NC       0x2000000000000000ULL  /* 01b: Non-cacheable */
+//w#define PTE_PBMT_IO       0x4000000000000000ULL  /* 10b: I/O Memory */
 #define PTE_N     _RISCV_ULL(0x8000000000000000) /* Svnapot: NAPOT translation contiguity */
 #define PTE_ATTR  _RISCV_ULL(0xFFC0000000000000) /* All attributes and reserved bits */
 
